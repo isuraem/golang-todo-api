@@ -11,6 +11,7 @@ import (
 	"github.com/isuraem/todo-api/internal/adapters/app/websocket"
 	"github.com/isuraem/todo-api/internal/adapters/core/todo"
 	"github.com/isuraem/todo-api/internal/adapters/core/user"
+	left "github.com/isuraem/todo-api/internal/adapters/framework/left"
 	"github.com/isuraem/todo-api/internal/adapters/framework/right/auth"
 	"github.com/isuraem/todo-api/internal/adapters/framework/right/db"
 	"github.com/joho/godotenv"
@@ -37,11 +38,11 @@ func main() {
 
 	jwtService := auth.NewJWTService(os.Getenv("JWT_SECRET"))
 
-	userDB := db.NewUserDB(dbAdapter)
+	userDB := left.NewUserDB(dbAdapter)
 	userService := user.NewUserService(userDB, jwtService)
 	userAPI := api.NewUserAPI(userService)
 
-	todoDB := db.NewTodoDB(dbAdapter)
+	todoDB := left.NewTodoDB(dbAdapter)
 	todoService := todo.NewTodoService(todoDB)
 	todoAPI := api.NewTodoAPI(todoService)
 
