@@ -8,7 +8,7 @@ import (
 )
 
 type TodoDB struct {
-	db *db.Adapter
+	adapter *db.Adapter
 }
 
 func NewTodoDB(adapter *db.Adapter) *TodoDB {
@@ -23,17 +23,17 @@ func (t *TodoDB) Create(todo models.Todo) error {
 }
 
 func (t *TodoDB) Update(id uint, todo models.Todo) error {
-	_, err := t.db.NewUpdate().Model(&todo).Where("id = ?", id).Exec(context.Background())
+	_, err := t.adapter.DB.NewUpdate().Model(&todo).Where("id = ?", id).Exec(context.Background())
 	return err
 }
 
 func (t *TodoDB) Delete(id uint) error {
-	_, err := t.db.NewDelete().Model((*models.Todo)(nil)).Where("id = ?", id).Exec(context.Background())
+	_, err := t.adapter.DB.NewDelete().Model((*models.Todo)(nil)).Where("id = ?", id).Exec(context.Background())
 	return err
 }
 
 func (t *TodoDB) List() ([]models.Todo, error) {
 	var todos []models.Todo
-	err := t.db.NewSelect().Model(&todos).Scan(context.Background())
+	err := t.adapter.DB.NewSelect().Model(&todos).Scan(context.Background())
 	return todos, err
 }

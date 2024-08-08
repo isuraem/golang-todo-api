@@ -6,14 +6,13 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/gorilla/mux"
 	"github.com/isuraem/todo-api/internal/adapters/app/api"
 	"github.com/isuraem/todo-api/internal/adapters/app/websocket"
 	"github.com/isuraem/todo-api/internal/adapters/core/todo"
 	"github.com/isuraem/todo-api/internal/adapters/core/user"
 	"github.com/isuraem/todo-api/internal/adapters/framework/right/auth"
 	"github.com/isuraem/todo-api/internal/adapters/framework/right/db"
-
-	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 )
 
