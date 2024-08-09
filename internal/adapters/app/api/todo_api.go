@@ -21,11 +21,9 @@ func NewTodoAPI(service ports.TodoService, hub *websocket.Hub) *TodoAPI {
 }
 
 func (api *TodoAPI) CreateTodo(w http.ResponseWriter, r *http.Request) {
-	var todo models.Todo
-	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	// Get the validated todo from the context
+	todo := r.Context().Value("validatedTodo").(models.Todo)
+
 	if err := api.service.Create(todo); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -41,11 +39,10 @@ func (api *TodoAPI) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	var todo models.Todo
-	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+
+	// Get the validated todo from the context
+	todo := r.Context().Value("validatedTodo").(models.Todo)
+
 	if err := api.service.Update(uint(id), todo); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -75,6 +72,7 @@ func (api *TodoAPI) ListTodos(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(todos)
 }
 

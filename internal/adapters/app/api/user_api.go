@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 
 	"github.com/isuraem/todo-api/internal/models"
@@ -17,11 +16,9 @@ func NewUserAPI(service ports.UserService) *UserAPI {
 }
 
 func (api *UserAPI) Register(w http.ResponseWriter, r *http.Request) {
-	var user models.User
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	// Get the validated user from the context
+	user := r.Context().Value("validatedUser").(models.User)
+
 	if err := api.service.Register(user); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -30,14 +27,12 @@ func (api *UserAPI) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *UserAPI) Login(w http.ResponseWriter, r *http.Request) {
-	var creds struct {
+	// Get the validated credentials from the context
+	creds := r.Context().Value("validatedUser").(struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&creds); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	})
+
 	token, err := api.service.Login(creds.Email, creds.Password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
