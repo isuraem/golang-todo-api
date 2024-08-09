@@ -5,6 +5,7 @@ import (
 
 	"github.com/isuraem/todo-api/internal/models"
 	"github.com/isuraem/todo-api/internal/ports"
+	"github.com/isuraem/todo-api/internal/validation"
 )
 
 type Service struct {
@@ -20,10 +21,10 @@ func NewUserService(userDB ports.UserDB, jwtService ports.JWTService) *Service {
 }
 
 func (s *Service) Register(user models.User) error {
-	if err := s.userDB.CreateUser(user); err != nil {
+	if err := validation.ValidateUser(user); err != nil {
 		return err
 	}
-	return nil
+	return s.userDB.CreateUser(user)
 }
 
 func (s *Service) Login(email, password string) (string, error) {
@@ -31,6 +32,9 @@ func (s *Service) Login(email, password string) (string, error) {
 	if err != nil || user.Password != password {
 		return "", errors.New("invalid credentials")
 	}
+
+	// Password comparison should be done using a hashed password check
+
 	token, err := s.jwtService.GenerateToken(user.ID)
 	if err != nil {
 		return "", err
