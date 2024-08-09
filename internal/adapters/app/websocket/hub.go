@@ -1,10 +1,12 @@
 package websocket
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"github.com/isuraem/todo-api/internal/models"
 )
 
 type Hub struct {
@@ -55,7 +57,7 @@ var upgrader = websocket.Upgrader{
 func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Println(err)
+		log.Println("WebSocket upgrade error:", err)
 		return
 	}
 	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
@@ -63,4 +65,13 @@ func ServeWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
 
 	go client.writePump()
 	go client.readPump()
+}
+
+func (h *Hub) BroadcastTodos(todos []models.Todo) {
+	todosJSON, err := json.Marshal(todos)
+	if err != nil {
+		log.Println("Error marshalling todos:", err)
+		return
+	}
+	h.broadcast <- todosJSON
 }

@@ -8,6 +8,15 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const (
+	maxMessageSize = 512
+	pongWait       = 60 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
+	writeWait      = 10 * time.Second
+	newline        = '\n'
+	space          = ' '
+)
+
 type Client struct {
 	hub  *Hub
 	conn *websocket.Conn
@@ -18,6 +27,7 @@ func (c *Client) readPump() {
 	defer func() {
 		c.hub.unregister <- c
 		c.conn.Close()
+		log.Println("WebSocket connection closed (readPump)")
 	}()
 	c.conn.SetReadLimit(maxMessageSize)
 	c.conn.SetReadDeadline(time.Now().Add(pongWait))
@@ -26,11 +36,13 @@ func (c *Client) readPump() {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("error: %v", err)
+				log.Printf("Unexpected WebSocket closure: %v", err)
+			} else {
+				log.Printf("WebSocket closure: %v", err)
 			}
 			break
 		}
-		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
+		message = bytes.TrimSpace(bytes.Replace(message, []byte{newline}, []byte{space}, -1))
 		c.hub.broadcast <- message
 	}
 }
@@ -40,6 +52,7 @@ func (c *Client) writePump() {
 	defer func() {
 		ticker.Stop()
 		c.conn.Close()
+		log.Println("WebSocket connection closed (writePump)")
 	}()
 	for {
 		select {
@@ -58,7 +71,7 @@ func (c *Client) writePump() {
 
 			n := len(c.send)
 			for i := 0; i < n; i++ {
-				w.Write(newline)
+				w.Write([]byte{newline})
 				w.Write(<-c.send)
 			}
 

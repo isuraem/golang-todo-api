@@ -1,8 +1,8 @@
 package models
 
 type User struct {
-	ID       uint   `json:"id"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	ID       uint   `bun:",pk,autoincrement" json:"id"`
+	Name     string `bun:",notnull" json:"name"`
+	Email    string `bun:",notnull" json:"email"`
+	Password string `bun:",notnull" json:"password"`
 }

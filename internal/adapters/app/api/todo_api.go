@@ -5,18 +5,19 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/gorilla/mux"
+	"github.com/isuraem/todo-api/internal/adapters/app/websocket"
 	"github.com/isuraem/todo-api/internal/models"
 	"github.com/isuraem/todo-api/internal/ports"
-
-	"github.com/gorilla/mux"
 )
 
 type TodoAPI struct {
 	service ports.TodoService
+	hub     *websocket.Hub
 }
 
-func NewTodoAPI(service ports.TodoService) *TodoAPI {
-	return &TodoAPI{service: service}
+func NewTodoAPI(service ports.TodoService, hub *websocket.Hub) *TodoAPI {
+	return &TodoAPI{service: service, hub: hub}
 }
 
 func (api *TodoAPI) CreateTodo(w http.ResponseWriter, r *http.Request) {
@@ -29,6 +30,7 @@ func (api *TodoAPI) CreateTodo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	api.broadcastTodos()
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -48,6 +50,7 @@ func (api *TodoAPI) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	api.broadcastTodos()
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -62,6 +65,7 @@ func (api *TodoAPI) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	api.broadcastTodos()
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -72,4 +76,12 @@ func (api *TodoAPI) ListTodos(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(todos)
+}
+
+func (api *TodoAPI) broadcastTodos() {
+	todos, err := api.service.List()
+	if err != nil {
+		return
+	}
+	api.hub.BroadcastTodos(todos)
 }
