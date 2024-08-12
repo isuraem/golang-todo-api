@@ -3,6 +3,7 @@ package todo
 import (
 	"github.com/isuraem/todo-api/internal/models"
 	"github.com/isuraem/todo-api/internal/ports"
+	"github.com/isuraem/todo-api/internal/validation"
 )
 
 type Service struct {
@@ -16,10 +17,16 @@ func NewTodoService(todoDB ports.TodoDB) *Service {
 }
 
 func (s *Service) Create(todo models.Todo) error {
+	if err := validation.ValidateTodo(todo); err != nil {
+		return err
+	}
 	return s.todoDB.Create(todo)
 }
 
 func (s *Service) Update(id uint, todo models.Todo) error {
+	if err := validation.ValidateTodo(todo); err != nil {
+		return err
+	}
 	return s.todoDB.Update(id, todo)
 }
 
