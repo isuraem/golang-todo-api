@@ -8,6 +8,12 @@ import (
 	"github.com/isuraem/todo-api/internal/middleware"
 )
 
+func NewRouter(userAPI *UserAPI, todoAPI *TodoAPI, hub *websocket.Hub) *mux.Router {
+	r := mux.NewRouter()
+	SetupRoutes(r, userAPI, todoAPI, hub)
+	return r
+}
+
 // SetupRoutes sets up the API routes and handlers.
 func SetupRoutes(r *mux.Router, userAPI *UserAPI, todoAPI *TodoAPI, hub *websocket.Hub) {
 	r.HandleFunc("/login", userAPI.Login).Methods("POST")
