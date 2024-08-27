@@ -25,6 +25,8 @@ func SetupRoutes(r *mux.Router, userAPI *UserAPI, todoAPI *TodoAPI, hub *websock
 	todos.HandleFunc("/{id}", todoAPI.UpdateTodo).Methods("PUT")
 	todos.HandleFunc("/{id}", todoAPI.DeleteTodo).Methods("DELETE")
 	todos.HandleFunc("", todoAPI.ListTodos).Methods("GET")
+	todos.HandleFunc("/{id}/like", todoAPI.LikeTodo).Methods("POST")
+	todos.HandleFunc("/{id}/unlike", todoAPI.UnlikeTodo).Methods("POST")
 
 	r.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		websocket.ServeWs(hub, w, r)
