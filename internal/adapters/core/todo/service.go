@@ -28,7 +28,6 @@ func (s *Service) Create(todo models.Todo) error {
 		return err
 	}
 
-	// Invalidate the cache since the list will change
 	_ = s.cacheClient.Delete("todo_list")
 
 	return s.todoDB.Create(todo)
@@ -39,44 +38,67 @@ func (s *Service) Update(id uint, todo models.Todo) error {
 		return err
 	}
 
-	// Invalidate the cache since the list might change
 	_ = s.cacheClient.Delete("todo_list")
 
 	return s.todoDB.Update(id, todo)
 }
 
 func (s *Service) Delete(id uint) error {
-	// Invalidate the cache since the list will change
 	_ = s.cacheClient.Delete("todo_list")
 
 	return s.todoDB.Delete(id)
 }
 
-func (s *Service) List() ([]models.Todo, error) {
+func (s *Service) List(userID uint) ([]models.Todo, error) {
 	cacheKey := "todo_list"
 
-	// Try to get the TODO list from the cache
 	cachedTodos, err := s.cacheClient.Get(cacheKey)
 	if err == nil && cachedTodos != "" {
 		log.Println("Cache hit: returning data from Redis")
-		return deserializeTodos(cachedTodos), nil
+		todos := deserializeTodos(cachedTodos)
+
+		// Add UserHasLiked to each todo
+		for i := range todos {
+			liked, err := s.todoDB.UserHasLiked(todos[i].ID, userID)
+			if err != nil {
+				return nil, err
+			}
+			todos[i].UserHasLiked = liked
+		}
+
+		return todos, nil
 	}
 
 	log.Println("Cache miss: fetching data from the database")
-	// If not in cache, get from the database
 	todos, err := s.todoDB.List()
 	if err != nil {
 		return nil, err
 	}
 
-	// Cache the result for future requests
+	for i := range todos {
+		liked, err := s.todoDB.UserHasLiked(todos[i].ID, userID)
+		if err != nil {
+			return nil, err
+		}
+		todos[i].UserHasLiked = liked
+	}
+
 	serializedTodos := serializeTodos(todos)
 	_ = s.cacheClient.Set(cacheKey, serializedTodos, 10*time.Minute)
 
 	return todos, nil
 }
 
-// serializeTodos serializes the TODOs into a JSON string
+func (s *Service) LikeTodoByUser(todoID, userID uint) error {
+	_ = s.cacheClient.Delete("todo_list")
+	return s.todoDB.LikeTodoByUser(todoID, userID)
+}
+
+func (s *Service) UnlikeTodoByUser(todoID, userID uint) error {
+	_ = s.cacheClient.Delete("todo_list")
+	return s.todoDB.UnlikeTodoByUser(todoID, userID)
+}
+
 func serializeTodos(todos []models.Todo) string {
 	jsonData, err := json.Marshal(todos)
 	if err != nil {
@@ -85,7 +107,6 @@ func serializeTodos(todos []models.Todo) string {
 	return string(jsonData)
 }
 
-// deserializeTodos deserializes a JSON string into a slice of TODOs
 func deserializeTodos(data string) []models.Todo {
 	var todos []models.Todo
 	err := json.Unmarshal([]byte(data), &todos)
